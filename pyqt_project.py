@@ -4,13 +4,16 @@ import csv
 import sys
 import random
 from PyQt5 import uic
+import os
 from PyQt5 import QtCore
 from PyQt5 import QtGui
-from PyQt5 import QtWidgets
+from PyQt5 import QtWidgets, QtSql
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPainter, QColor, QPixmap, QFont
 from PyQt5.QtWidgets import QWidget, QApplication, QPushButton, QLabel, QInputDialog, QTextEdit, QMainWindow, QMessageBox
-from PyQt5.QtWidgets import QVBoxLayout, QDialogButtonBox, QLineEdit, QTableWidget, QTableWidgetItem
+from PyQt5.QtWidgets import QVBoxLayout, QDialogButtonBox, QLineEdit, QTableWidget, QTableWidgetItem, QTableView
+from PyQt5.QtSql import QSqlDatabase, QSqlTableModel
+
 
 
 class Window1(QtWidgets.QWidget):
@@ -405,6 +408,7 @@ class Window3(QtWidgets.QWidget):  # окно для англо-язычных
             self.image.setPixmap(self.pixmap2)
             self.image.show()
 
+
         if event.key() == Qt.Key_C:
             self.pixmap2 = QPixmap(self.dictionary["C"])
             self.image = QLabel(self)
@@ -657,6 +661,7 @@ class Test_in_rus1(QtWidgets.QWidget):   # тест для руско-язычн
         self.line = QLineEdit(self)  # в переменную line будут записываться имена
         self.line.move(10, 50)
         self.right_answ = 0  # переменная нужна для подсчета правильных ответов
+        self.count = 0  # кнопка нужна для подсчета тестов
         self.start_btn = QPushButton(self)  # кнопка нужна для того чтобы пользователь мог обновлять вопрос
         self.start_btn.setText("Тесты")
         self.start_btn.resize(100, 30)
@@ -676,7 +681,7 @@ class Test_in_rus1(QtWidgets.QWidget):   # тест для руско-язычн
         self.lbl.move(250, 10)
         self.lbl.setStyleSheet(u"font-size: 20px;")
         self.lbl.show()
-        self.count = 0  # кнопка нужна для подсчета тестов
+
 
 
         with open("data\csv_file_rus_test.csv") as csv_file:  # открытие csv файла для теста
@@ -702,9 +707,20 @@ class Test_in_rus1(QtWidgets.QWidget):   # тест для руско-язычн
             self.line.setText(str(text))
 
     def count_btn_click(self):
-        self.count += 1
+        try:
+            self.count += 1
+        except Exception as e:
+            print(e)
 
     def start(self):
+        if self.count == 10:
+            dlg = QMessageBox(self)
+            dlg.setWindowTitle("Dialog")
+            dlg.setText("Достаточно")
+            button = dlg.exec()
+            if button == QMessageBox.Ok:
+                pass
+
         self.lst_letter = ['А', 'Б ', 'В', 'Г', 'Д', 'Е', 'Ё', 'Ж', 'З', 'И', 'Й', 'К', 'Л', 'М', 'Н', 'О',
                            'П', 'Р', 'С', 'Т', 'У', 'Ф', 'Х', 'Ц', 'Ч', 'Ш', 'Щ', 'Ъ', 'Ы', 'Ь', 'Э', 'Ю', 'Я']  # обновление списка
         self.lst_img = ['data\\тест_буква_а.jpg', 'data\\тест_буква_б.jpg', 'data\\тест_буква_в.jpg',
@@ -749,15 +765,10 @@ class Test_in_rus1(QtWidgets.QWidget):   # тест для руско-язычн
         self.lbl4.move(595, 400)
         self.lbl4.setStyleSheet(u"font-size: 20px;")
         self.lbl4.show()
-        self.a = random.choice(self.lst_img)  # с помощью рандома выбираются картинки
-        self.pixmap1 = QPixmap(self.a)
-        self.image = QLabel(self)
-        self.image.resize(300, 300)
-        self.image.move(300, 25)
-        self.image.setPixmap(self.pixmap1)
-        self.image.show()
 
-        self.lst = []
+
+
+        self.lst = []  # список нужен для того чтобы взять со списка с буквами любые 4 рандомных букв (одна из букв соответсвует рисунку)
         self.lst.append(self.inv_dict[self.a])
         self.lst_letter.remove(self.inv_dict[self.a])
         self.sec_ran_let = random.choice(self.lst_letter)
@@ -769,6 +780,14 @@ class Test_in_rus1(QtWidgets.QWidget):   # тест для руско-язычн
         self.four_ran_let = random.choice(self.lst_letter)
         self.lst.append(self.four_ran_let)
         self.lst_copy = self.lst
+
+        self.a = random.choice(self.lst_img)  # с помощью рандома выбираются картинки
+        self.pixmap1 = QPixmap(self.a)
+        self.image = QLabel(self)
+        self.image.resize(300, 300)
+        self.image.move(300, 25)
+        self.image.setPixmap(self.pixmap1)
+        self.image.show()
 
         self.b = random.choice(self.lst)  # рандомно выбирается буква но уже без буквы по рисунку
         self.answ_btn1 = QPushButton(self)
@@ -806,18 +825,13 @@ class Test_in_rus1(QtWidgets.QWidget):   # тест для руско-язычн
         self.answ_btn4.show()
         self.answ_btn4.clicked.connect(self.btn4)
         self.lst_copy = [self.inv_dict[self.a], self.sec_ran_let, self.third_ran_let, self.four_ran_let]
+        # в этом списке первым элементом являяется буква соответсвующая рисунку
 
     def wrong_ans(self):
-        dlg = QMessageBox(self)
-        dlg.setWindowTitle("Допущена ошибка")
-        dlg.setText("Неверный ответ")
-        button = dlg.exec()
-
-        if button == QMessageBox.Ok:
-            print("ok")
+        QMessageBox.information(self, "Предупреждение", "неверный ответ", QMessageBox.Ok) # при нажатии не правильной буквы выходит диалог. окно
 
     def btn1(self):
-        if self.answ_btn1.text() == self.lst_copy[0]:
+        if self.answ_btn1.text() == self.lst_copy[0]:  # кнопки сравниваются с правильной буквой
             self.right_answ += 1
         else:
             self.right_answ = self.right_answ  # по нажатию неправильной буквы количество правильных ответов остается неизменным
@@ -845,21 +859,23 @@ class Test_in_rus1(QtWidgets.QWidget):   # тест для руско-язычн
             self.wrong_ans()
 
     def finish(self):
-        self.procent = self.right_answ / self.count * 100
 
-        db = sqlite3.connect('project.db')
-        sql = db.cursor()
-        db.execute("""CREATE TABLE users (
-                Имя text,
-                Процент выполнения text,
-            )""")
-        db.commit()
-        sql.execute(f"INSERT INTO users VALUES ('{self.line.text()}', {self.procent})")
-        db.commit()
-        print("trgtr")
+        if self.count >= 2:  # пользователь должен сделать как минимум 10 тестов
+            self.procent = (self.right_answ / self.count) * 100  # высчитывается процент выполнения
+
+            db = sqlite3.connect('project2.db')
+            sql = db.cursor()
+            db.commit()
+            sql.execute(f"INSERT INTO users2(user_name, user_percent) VALUES ('{self.line.text()}', '{self.procent}')")
+            db.commit()                                                       # имя пользователя
+            self.next_w()
+        else:
+            QMessageBox.information(self, "Предупреждение", "Сделайте еще немного тестов", QMessageBox.Ok)
 
 
-
+    def next_w(self):
+        self.result_w1 = Result_rus()
+        self.result_w1.show()
 
 class Test_in_eng(QtWidgets.QWidget):  # окно для англо-язычных (здесь все такое как в окне для русско-язычных)
     def __init__(self):
@@ -928,6 +944,7 @@ class Test_in_eng(QtWidgets.QWidget):  # окно для англо-язычны
             button = dlg.exec()
             if button == QMessageBox.Ok:
                 pass
+
         self.lst_letter = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R',
                            'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
         self.lst_img = ['data\\test_letter_a.jpg', 'data\\test_letter_b', 'data\\test_letter_c', 'data\\test_letter_d',
@@ -967,6 +984,7 @@ class Test_in_eng(QtWidgets.QWidget):  # окно для англо-язычны
         self.lbl4.move(595, 420)
         self.lbl4.setStyleSheet(u"font-size: 20px;")
         self.lbl4.show()
+
         self.a = random.choice(self.lst_img)
         self.pixmap1 = QPixmap(self.a)
         self.image = QLabel(self)
@@ -1026,13 +1044,7 @@ class Test_in_eng(QtWidgets.QWidget):  # окно для англо-язычны
         self.lst_copy = [self.inv_dict[self.a], self.sec_ran_let, self.third_ran_let, self.four_ran_let]
 
     def wrong_ans(self):
-        dlg = QMessageBox(self)
-        dlg.setWindowTitle("Mistake")
-        dlg.setText("Wrong answer")
-        button = dlg.exec()
-
-        if button == QMessageBox.Ok:
-            pass
+        QMessageBox.information(self, "Mistake", "Wrong answer", QMessageBox.Ok)
 
     def btn1(self):
         if self.answ_btn1.text() == self.lst_copy[0]:
@@ -1065,34 +1077,85 @@ class Test_in_eng(QtWidgets.QWidget):  # окно для англо-язычны
 
 
     def finish(self):
-        if self.count >= 2:
+        if self.count >= 1:
             self.procent = (self.right_answ / self.count) * 100
-            try:
-                db = sqlite3.connect('project.db')
-                sql = db.cursor()
-                db.commit()
-                sql.execute(f"INSERT INTO users(user_name, user_percent) VALUES ('{self.line.text()}', '{self.procent}')")
-                db.commit()
-            except Exception as e:
-                print(e)
-            self.next_w()
 
+            db = sqlite3.connect('project.db')
+            sql = db.cursor()
+            db.commit()
+            sql.execute(f"INSERT INTO users(user_name, user_percent) VALUES ('{self.line.text()}', '{self.procent}')")
+            db.commit()
+
+            self.next_w()
 
         else:
             QMessageBox.information(self, "Warning", "Do some more tests", QMessageBox.Ok)
 
     def next_w(self):
-        self.result_w = Result()
+        self.result_w = Result_eng()
         self.result_w.show()
 
-class Result(QtWidgets.QWidget):
+class Result_eng(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle('Result')
+        self.setGeometry(300, 300, 800, 500)
+        self.lbl = QLabel(self)
+        self.lbl.setText("Below are the results of people who passed the tests")
+        self.lbl.resize(700, 30)
+        self.lbl.move(10, 10)
+        self.lbl.setStyleSheet(u"font-size: 20px;")
+        # Зададим тип базы данных
+        db = QSqlDatabase.addDatabase('QSQLITE')
+        # Укажем имя базы данных
+        db.setDatabaseName('project.db')
+        # И откроем подключение
+        db.open()
 
-        uic.loadUi('tablewidjet.ui', self)
-        self.tableWidget.setColumnWidth(0, 400)
+        # QTableView - виджет для отображения данных из базы
+        view = QTableView(self)
+        # Создадим объект QSqlTableModel,
+        # зададим таблицу, с которой он будет работать,
+        #  и выберем все данные
+        model = QSqlTableModel(self, db)
+        model.setTable('users')
+        model.select()
+        # Для отображения данных на виджете
+        # свяжем его и нашу модель данных
+        view.setModel(model)
+        view.move(50, 50)
+        view.resize(450, 400)
 
+class Result_rus(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle('Результаты')
+        self.setGeometry(300, 300, 800, 500)
+        self.lbl = QLabel(self)
+        self.lbl.setText("Ниже представлены результаты людей пройденных тест")
+        self.lbl.resize(700, 30)
+        self.lbl.move(10, 10)
+        self.lbl.setStyleSheet(u"font-size: 20px;")
+        # Зададим тип базы данных
+        db = QSqlDatabase.addDatabase('QSQLITE')
+        # Укажем имя базы данных
+        db.setDatabaseName('project2.db')
+        # И откроем подключение
+        db.open()
+
+        # QTableView - виджет для отображения данных из базы
+        view = QTableView(self)
+        # Создадим объект QSqlTableModel,
+        # зададим таблицу, с которой он будет работать,
+        #  и выберем все данные
+        model = QSqlTableModel(self, db)
+        model.setTable('users2')
+        model.select()
+        # Для отображения данных на виджете
+        # свяжем его и нашу модель данных
+        view.setModel(model)
+        view.move(50, 50)
+        view.resize(450, 400)
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
